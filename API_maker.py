@@ -4,10 +4,10 @@ from fastapi.responses import Response
 from typing import Optional
 import pandas as pd
 import os
+import math  # ← LEGG TIL DENNE
 
 app = FastAPI()
 
-# CORS-middleware (for utvikling – bruk ["din-prod-url"] i prod)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,7 +16,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Ekstra middleware for å tvinge CORS-header på ALLE responses
 @app.middleware("http")
 async def add_cors_headers(request: Request, call_next):
     response = await call_next(request)
@@ -59,21 +58,31 @@ def get_lonn(
         result = result[result["Sektor"].str.lower().str.strip() == sektor.lower().strip()]
 
     if not any([yrke, kjonn, tid, sektor]):
-        return result.to_dict(orient="records")
+        # Også sørg for at ALLE rader har 'value' uten NaN
+        records = result.to_dict(orient="records")
+        for rec in records:
+            v = rec.get("value")
+            if isinstance(v, float) and math.isnan(v):
+                rec["value"] = None
+        return records
 
     if not result.empty:
         value = result["value"].mean()
+        # FIX: Unngå NaN!
+        if isinstance(value, float) and math.isnan(value):
+            value = None
+        else:
+            value = round(value, 1)
         return {
             "Yrke": yrke,
             "Kjonn": kjonn,
             "Tid": tid,
             "Sektor": sektor,
-            "value": round(value, 1)
+            "value": value
         }
     else:
         return {"error": "Ingen data funnet for valgt filter."}
 
-# (OPTIONAL: beholder denne om du fortsatt får 405 på OPTIONS)
 @app.options("/lonn/")
 async def options_lonn():
     return Response(
