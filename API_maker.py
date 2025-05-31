@@ -4,38 +4,28 @@ from typing import Optional
 import pandas as pd
 import os
 
-# 1. Start FastAPI
+# Start FastAPI
 app = FastAPI(
     title="Lønns-API for EdPath",
     description="API for søk etter lønn med yrke, kjønn, sektor og år. Med CORS for Lovable og Railway.",
     version="3.0"
 )
 
-# 2. Legg til CORS-middleware (tillat Lovable-domener)
-from fastapi.middleware.cors import CORSMiddleware
-
+# NB! For utvikling: tillat ALLE origins (fjerner CORS-problemer på Lovable/dev/prod/preview)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://b91623da-c9a0-4af0-939c-cc22cd1cf669.lovableproject.com",
-        "https://app.lovable.no",
-        "https://id-preview--b91623da-c9a0-4af0-939c-cc22cd1cf669.lovable.app"
-    ],
+    allow_origins=["*"],  # <-- Endre til bare prod-domener senere!
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
-
-# 3. Data: Last inn CSV-er fra mappe
 DIR_PATH = "SSB data/CSV/Clean_11418"
 
 def load_data():
     csv_files = [os.path.join(DIR_PATH, f) for f in os.listdir(DIR_PATH) if f.endswith(".csv")]
     dfs = [pd.read_csv(f) for f in csv_files]
     all_data = pd.concat(dfs, ignore_index=True)
-    # Filtrer ut kun relevante rader – ikke sektor her!
     all_data = all_data[
         (all_data["AvtaltVanlig"] == "Heltidsansatte") &
         (all_data["ContentsCode"] == "Månedslønn (kr)") &
@@ -46,7 +36,6 @@ def load_data():
 
 df = load_data()
 
-# 4. Endpoint med søkefelter
 @app.get("/lonn/")
 def get_lonn(
     yrke: Optional[str] = Query(None, description="F.eks. 'Sykepleier'"),
@@ -64,11 +53,9 @@ def get_lonn(
     if sektor:
         result = result[result["Sektor"].str.lower().str.strip() == sektor.lower().strip()]
 
-    # Hvis INGEN filter er valgt, returner ALLE rader som en liste med dicts
     if not any([yrke, kjonn, tid, sektor]):
         return result.to_dict(orient="records")
 
-    # Ellers, hvis det er valgt filter, gi tilbake ett resultat eller error_s
     if not result.empty:
         value = result["value"].mean()
         return {
