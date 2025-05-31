@@ -11,10 +11,13 @@ app = FastAPI(
     version="3.0"
 )
 
-# 2. Legg til CORS-middleware (tillat alle for enkel testing!)
+# 2. Legg til CORS-middleware (tillat Lovable-domener)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Eller f.eks. ['https://app.lovable.no']
+    allow_origins=[
+        "https://b91623da-c9a0-4af0-939c-cc22cd1cf669.lovableproject.com",
+        "https://app.lovable.no"
+    ],  # Legg til flere domener ved behov
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,7 +41,7 @@ def load_data():
 
 df = load_data()
 
-# 4. Endpoint med søkefelter - sadf
+# 4. Endpoint med søkefelter
 @app.get("/lonn/")
 def get_lonn(
     yrke: Optional[str] = Query(None, description="F.eks. 'Sykepleier'"),
@@ -60,7 +63,7 @@ def get_lonn(
     if not any([yrke, kjonn, tid, sektor]):
         return result.to_dict(orient="records")
 
-    # Ellers, hvis det er valgt filter, gi tilbake ett resultat eller error
+    # Ellers, hvis det er valgt filter, gi tilbake ett resultat eller error_s
     if not result.empty:
         value = result["value"].mean()
         return {
