@@ -1,12 +1,13 @@
-from fastapi import FastAPI, Query, Request, Response
+from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from typing import Optional
 import pandas as pd
 import os
 
 app = FastAPI()
 
-# CORS-middleware for alle origins (bytt ut med frontend-url i prod)
+# CORS-middleware (for utvikling – bruk ["din-prod-url"] i prod)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -14,6 +15,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Ekstra middleware for å tvinge CORS-header på ALLE responses
+@app.middleware("http")
+async def add_cors_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
 
 DIR_PATH = "SSB data/CSV/Clean_11418"
 
@@ -63,9 +73,9 @@ def get_lonn(
     else:
         return {"error": "Ingen data funnet for valgt filter."}
 
-# Eksplicit OPTIONS-endpoint for /lonn/
+# (OPTIONAL: beholder denne om du fortsatt får 405 på OPTIONS)
 @app.options("/lonn/")
-async def options_lonn(request: Request):
+async def options_lonn():
     return Response(
         status_code=200,
         headers={
