@@ -18,12 +18,14 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://b91623da-c9a0-4af0-939c-cc22cd1cf669.lovableproject.com",
-        "https://app.lovable.no"
+        "https://app.lovable.no",
+        "https://id-preview--b91623da-c9a0-4af0-939c-cc22cd1cf669.lovable.app"
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+
 
 
 # 3. Data: Last inn CSV-er fra mappe
