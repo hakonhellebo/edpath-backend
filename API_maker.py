@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 import pandas as pd
@@ -6,9 +6,10 @@ import os
 
 app = FastAPI()
 
+# CORS-middleware for alle origins (bytt ut med frontend-url i prod)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # For testing, gjør dette til din frontend-url i prod
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,3 +62,15 @@ def get_lonn(
         }
     else:
         return {"error": "Ingen data funnet for valgt filter."}
+
+# Eksplicit OPTIONS-endpoint for /lonn/
+@app.options("/lonn/")
+async def options_lonn(request: Request):
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        },
+    )
