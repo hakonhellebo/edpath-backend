@@ -19,11 +19,12 @@ app.add_middleware(
     allow_origins=[
         "https://b91623da-c9a0-4af0-939c-cc22cd1cf669.lovableproject.com",
         "https://app.lovable.no"
-    ],  # Du kan også bruke ["*"] midlertidig, men vær spesifikk for produksjon!
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+
 
 # 3. Data: Last inn CSV-er fra mappe
 DIR_PATH = "SSB data/CSV/Clean_11418"
