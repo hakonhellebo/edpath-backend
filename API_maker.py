@@ -4,17 +4,11 @@ from typing import Optional
 import pandas as pd
 import os
 
-# Start FastAPI
-app = FastAPI(
-    title="Lønns-API for EdPath",
-    description="API for søk etter lønn med yrke, kjønn, sektor og år. Med CORS for Lovable og Railway.",
-    version="3.0"
-)
+app = FastAPI()
 
-# NB! For utvikling: tillat ALLE origins (fjerner CORS-problemer på Lovable/dev/prod/preview)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # <-- Endre til bare prod-domener senere!
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
