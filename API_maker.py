@@ -12,12 +12,14 @@ app = FastAPI(
 )
 
 # 2. Legg til CORS-middleware (tillat Lovable-domener)
+from fastapi.middleware.cors import CORSMiddleware
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://b91623da-c9a0-4af0-939c-cc22cd1cf669.lovableproject.com",
         "https://app.lovable.no"
-    ],  # Legg til flere domener ved behov
+    ],  # Du kan også bruke ["*"] midlertidig, men vær spesifikk for produksjon!
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
