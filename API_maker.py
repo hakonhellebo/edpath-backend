@@ -1,13 +1,14 @@
 from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
-from typing import Optional
+from typing import Optional, List
 import pandas as pd
 import os
-import math  # ← LEGG TIL DENNE
+import math
 
 app = FastAPI()
 
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -42,10 +43,10 @@ df = load_data()
 
 @app.get("/lonn/")
 def get_lonn(
-    yrke: Optional[str] = Query(None, description="F.eks. 'Sykepleier'"),
-    kjonn: Optional[str] = Query(None, description="Menn, Kvinner, Begge kjønn"),
-    tid: Optional[int] = Query(None, description="År, f.eks. 2022"),
-    sektor: Optional[str] = Query(None, description="Sektor, f.eks. 'Sum alle sektorer', 'Privat sektor og offentlige eide foretak', 'Statsforvaltningen', 'Kommune og fylkeskommune'")
+    yrke: Optional[str] = Query(None),
+    kjonn: Optional[str] = Query(None),
+    tid: Optional[List[int]] = Query(None),  # <-- støtte for FLERE år
+    sektor: Optional[str] = Query(None)
 ):
     result = df.copy()
     if yrke:
@@ -53,12 +54,11 @@ def get_lonn(
     if kjonn:
         result = result[result["Kjonn"].str.lower() == kjonn.lower()]
     if tid:
-        result = result[result["Tid"] == tid]
+        result = result[result["Tid"].isin(tid)]
     if sektor:
         result = result[result["Sektor"].str.lower().str.strip() == sektor.lower().strip()]
 
     if not any([yrke, kjonn, tid, sektor]):
-        # Også sørg for at ALLE rader har 'value' uten NaN
         records = result.to_dict(orient="records")
         for rec in records:
             v = rec.get("value")
@@ -67,19 +67,17 @@ def get_lonn(
         return records
 
     if not result.empty:
-        value = result["value"].mean()
-        # FIX: Unngå NaN!
-        if isinstance(value, float) and math.isnan(value):
-            value = None
-        else:
-            value = round(value, 1)
-        return {
-            "Yrke": yrke,
-            "Kjonn": kjonn,
-            "Tid": tid,
-            "Sektor": sektor,
-            "value": value
-        }
+        grouped = result.groupby("Tid")["value"].mean().reset_index()
+        output = []
+        for _, row in grouped.iterrows():
+            year = int(row["Tid"])
+            val = row["value"]
+            if isinstance(val, float) and math.isnan(val):
+                val = None
+            else:
+                val = round(val, 1)
+            output.append({"Tid": year, "value": val})
+        return output
     else:
         return {"error": "Ingen data funnet for valgt filter."}
 
